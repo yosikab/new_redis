@@ -1,0 +1,3 @@
+locals {
+  redis_private_ip = "10.0.1.4"
+}
