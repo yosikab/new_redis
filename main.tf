@@ -1,4 +1,9 @@
-resource "azurerm_resource_group" "this" {
+# Resource group - Azure Verified Module
+# Registry: https://registry.terraform.io/modules/Azure/avm-res-resources-resourcegroup/azurerm/latest
+module "resource_group" {
+  source  = "Azure/avm-res-resources-resourcegroup/azurerm"
+  version = "~> 0.2"
+
   name     = var.resource_group_name
   location = var.location
 
@@ -19,7 +24,7 @@ module "redis" {
 
   name      = var.redis_name
   location  = var.location
-  parent_id = azurerm_resource_group.this.id
+  parent_id = module.resource_group.resource_id
 
   sku_name            = var.redis_sku_name
   clustering_policy   = "OSSCluster"
@@ -79,7 +84,7 @@ module "redis" {
 resource "azurerm_virtual_network" "redis" {
   name                = "vnet-redis"
   location            = var.location
-  resource_group_name = azurerm_resource_group.this.name
+  resource_group_name = module.resource_group.name
   address_space       = ["10.0.0.0/16"]
 
   tags = var.tags
@@ -87,7 +92,7 @@ resource "azurerm_virtual_network" "redis" {
 
 resource "azurerm_subnet" "redis_pe" {
   name                 = "snet-redis-pe"
-  resource_group_name  = azurerm_resource_group.this.name
+  resource_group_name  = module.resource_group.name
   virtual_network_name = azurerm_virtual_network.redis.name
   address_prefixes     = ["10.0.1.0/24"]
 }
@@ -138,7 +143,7 @@ resource "azurerm_monitor_diagnostic_setting" "key_vault" {
 resource "azurerm_user_assigned_identity" "redis_cmk" {
   name                = "id-${var.redis_name}-cmk"
   location            = var.location
-  resource_group_name = azurerm_resource_group.this.name
+  resource_group_name = module.resource_group.name
 
   tags = var.tags
 }
@@ -151,7 +156,7 @@ module "key_vault" {
 
   name                = coalesce(var.key_vault_name, "kv-redis-cmk-${substr(data.azurerm_client_config.current.subscription_id, 0, 8)}")
   location            = var.location
-  resource_group_name = azurerm_resource_group.this.name
+  resource_group_name = module.resource_group.name
   tenant_id           = data.azurerm_client_config.current.tenant_id
 
   sku_name                 = "standard"
